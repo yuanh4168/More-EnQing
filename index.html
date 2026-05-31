@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>趣文工坊 · 渲染与截图</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #eef2f5;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px 16px 50px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #b22234, #c0392b);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .header p {
+            color: #5a6e7c;
+            font-size: 0.85rem;
+        }
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 48px;
+            padding: 4px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        .tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #2c3e50;
+        }
+        .tab-btn.active {
+            background: #c0392b;
+            color: white;
+        }
+        .panel {
+            display: none;
+            background: white;
+            border-radius: 32px;
+            padding: 22px 20px 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+        .panel.active-panel {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 0.9rem;
+        }
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            border: 1.5px solid #e0e7ed;
+            border-radius: 24px;
+            background: #fefefe;
+            font-family: inherit;
+        }
+        .row-2col {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .row-2col>div {
+            flex: 1;
+        }
+        button {
+            background: #c0392b;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 40px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        button.secondary {
+            background: #2c3e50;
+        }
+        button.export-btn {
+            background: #27ae60;
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        .prompt-area,
+        .render-area {
+            margin-top: 24px;
+            border-top: 2px dashed #dce5ec;
+            padding-top: 20px;
+        }
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        textarea {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: #f8fafc;
+        }
+        .render-wrapper {
+            margin-top: 16px;
+            background: #fff;
+            border-radius: 24px;
+            border: 1px solid #e9edf2;
+            overflow: auto;
+            padding: 20px;
+            min-height: 500px;
+        }
+        .preview-frame {
+            width: 100%;
+            border: none;
+            background: white;
+            min-height: 500px;
+        }
+        .screenshot-gallery {
+            margin-top: 24px;
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 16px;
+            border: 1px solid #dce5ec;
+        }
+        .gallery-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .screenshot-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 16px;
+            padding-bottom: 12px;
+        }
+        .screenshot-card {
+            flex-shrink: 0;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            text-align: center;
+        }
+        .screenshot-card img {
+            max-height: 500px;
+            width: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .screenshot-card .download-btn {
+            margin-top: 8px;
+            background: #2980b9;
+            padding: 6px 12px;
+            font-size: 0.7rem;
+        }
+        .image-placeholder {
+            display: inline-block;
+            margin: 10px 0;
+            border: 2px dashed #c0392b;
+            background: #fff0f0;
+            padding: 8px;
+            border-radius: 12px;
+            text-align: center;
+            width: 100%;
+        }
+        .image-placeholder img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+        }
+        .placeholder-controls {
+            margin-top: 6px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        .placeholder-controls button {
+            background: #3498db;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+        }
+        .note {
+            font-size: 0.7rem;
+            color: #7e8c8f;
+            margin-top: 12px;
+            text-align: center;
+        }
+        .flex-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        hr {
+            margin: 16px 0;
+        }
+        @media (max-width: 640px) {
+            .panel {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📄 智能公文渲染器</h1>
+        <p>生成提示词 → AI返回纯文本 → 粘贴渲染 → 导出图片（自动切片并排）</p>
+        <p class="note">⚠️ 本程序不含任何复制按钮，请手动选中文本进行复制</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="tab1">📢 红头文件</button>
+        <button class="tab-btn" data-tab="tab2">🙏 恩情文章 + 图片占位</button>
+    </div>
+
+    <!-- ================= 红头文件面板 ================= -->
+    <div id="tab1" class="panel active-panel">
+        <div class="form-group"><label>🏢 发文单位（虚构/机构）</label><input type="text" id="redOrg" value="厦门市教育局"></div>
+        <div class="form-group"><label>📄 文件类型</label><select id="redType"><option value="通知">通知</option><option value="通报">通报</option><option value="决定">决定</option><option value="批复">批复</option></select></div>
+        <div class="form-group"><label>🎲 荒诞事由</label><textarea id="redEvent" rows="2">因为跑操，下雨天也要变成晴天</textarea></div>
+        <div class="row-2col">
+            <div><label>📏 最低字数要求（字符）</label><input type="number" id="redMinWords" value="300" step="50"></div>
+            <div><label>📊 强制包含表格</label><select id="redTableRequired"><option value="是">是，必须包含表格</option><option value="否">否</option></select></div>
+        </div>
+        <div class="form-group"><label>📅 文号（可选）</label><input type="text" id="redNumber" value="〔2026〕第8号"></div>
+        <div class="form-group"><label>🖋️ 落款单位 & 日期</label><div style="display: flex; gap: 8px; flex-wrap: wrap;"><input type="text" id="redSignUnit" placeholder="落款" style="flex:1" value="厦门市教育局"><input type="text" id="redSignDate" placeholder="日期" style="flex:1" value="2026年6月1日"></div></div>
+        <button id="genRedPromptBtn">✨ 生成提示词（手动复制文本发给AI）</button>
+        <div class="prompt-area" id="redPromptArea" style="display: none;"><div class="section-title"><span>📋 下方提示词请手动复制，发给AI</span></div><textarea id="redPromptText" rows="8" readonly></textarea><div class="note">AI将返回带标记的纯文本，请粘贴到下方“AI返回纯文本”区域</div></div>
+        <div class="render-area">
+            <div class="section-title"><span>📥 粘贴AI返回的纯文本</span><div class="flex-btns"><button id="renderRedBtn" class="secondary">🎨 渲染预览</button><button id="exportRedImgBtn" class="export-btn">📸 保存为图片</button></div></div>
+            <textarea id="redPlainText" rows="8" placeholder="请将AI输出的纯文本粘贴到这里..."></textarea>
+            <div id="redRenderWrapper" class="render-wrapper" style="display: none;"><iframe id="redIframe" class="preview-frame" title="红头文件预览"></iframe></div>
+            <div id="redGallery" class="screenshot-gallery" style="display: none;"><div class="gallery-title"><span>🖼️ 截图结果</span><button id="downloadAllRedBtn" class="export-btn" style="background:#27ae60;">⬇️ 下载全部</button></div><div id="redScroll" class="screenshot-scroll"></div></div>
+        </div>
+    </div>
+
+    <!-- ================= 恩情文章面板 ================= -->
+    <div id="tab2" class="panel">
+        <div class="form-group"><label>🌟 主角</label><input type="text" id="eHero" value="立熊"></div>
+        <div class="form-group"><label>✨ 感人事迹</label><textarea id="eDeed" rows="2">在快要不再叫学生们的时候，在台上哭哭啼啼下面没一个人鸟他</textarea></div>
+        <div class="form-group"><label>📍 地点/时间</label><div style="display: flex; gap: 8px;"><input type="text" id="ePlace" placeholder="地点" style="flex:1" value="班级"><input type="text" id="eTime" placeholder="时间" style="flex:1" value="2024年"></div></div>
+        <div class="form-group"><label>🖼️ 启用图片占位符</label><select id="enableImagePlaceholder"><option value="是" selected>是 - 插入 <<IMG:描述>> 占位</option><option value="否">否</option></select></div>
+        <div class="form-group" id="imgPromptGroup" style="display: none;"><label>🎨 图片生成提示词</label><textarea id="imgGenPrompt" rows="3" placeholder="此处自动生成图片描述提示词..."></textarea></div>
+        <button id="genEulogyPromptBtn">✨ 生成文章提示词（手动复制发给AI）</button>
+        <div class="prompt-area" id="eulogyPromptArea" style="display: none;"><div class="section-title"><span>📋 提示词</span></div><textarea id="eulogyPromptText" rows="8" readonly></textarea><div class="note">AI将返回带标记的纯文本，可能包含 <<IMG:描述>> 占位符</div></div>
+        <div class="render-area">
+            <div class="section-title"><span>📥 粘贴AI返回的纯文本</span><div class="flex-btns"><button id="renderEulogyBtn" class="secondary">🎨 渲染预览</button><button id="exportEulogyImgBtn" class="export-btn">📸 保存为图片</button></div></div>
+            <textarea id="eulogyPlainText" rows="8" placeholder="请粘贴AI输出的纯文本..."></textarea>
+            <div id="eulogyRenderWrapper" class="render-wrapper" style="display: none;"><iframe id="eulogyIframe" class="preview-frame" title="恩情文章预览"></iframe></div>
+            <div id="eulogyGallery" class="screenshot-gallery" style="display: none;"><div class="gallery-title"><span>🖼️ 截图结果</span><button id="downloadAllEulogyBtn" class="export-btn" style="background:#27ae60;">⬇️ 下载全部</button></div><div id="eulogyScroll" class="screenshot-scroll"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- 工具函数 ----------
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
+        }
+
+        function renderToIframe(iframe, html, wrapper) {
+            if (!html) return;
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            iframe.src = url;
+            iframe.onload = () => {
+                URL.revokeObjectURL(url);
+                try {
+                    iframe.style.height = Math.max(iframe.contentWindow.document.body.scrollHeight + 30, 500) + 'px';
+                } catch (e) { iframe.style.height = '600px'; }
+            };
+            wrapper.style.display = 'block';
+        }
+
+        // 将 Markdown 表格转换为 HTML 表格
+        function convertMarkdownTables(text) {
+            const lines = text.split('\n');
+            const output = [];
+            let tableLines = [];
+            let inTable = false;
+            for (let line of lines) {
+                if (/^\s*\|.+/.test(line)) {
+                    inTable = true;
+                    tableLines.push(line.trim());
+                } else {
+                    if (inTable) {
+                        output.push(renderTableHTML(tableLines));
+                        tableLines = [];
+                        inTable = false;
+                    }
+                    output.push(line);
+                }
+            }
+            if (inTable) output.push(renderTableHTML(tableLines));
+            return output.join('\n');
+        }
+
+        function renderTableHTML(lines) {
+            if (lines.length === 0) return '';
+            // 解析单元格
+            const parseCells = (row) => row.split('|').filter(c => c.trim() !== '').map(c => c.trim());
+            let html = '<table>';
+            // 表头
+            const headerCells = parseCells(lines[0]).map(c => `<th>${escapeHtml(c)}</th>`).join('');
+            html += `<thead><tr>${headerCells}</tr></thead><tbody>`;
+            let dataStart = 1;
+            // 跳过可能的对齐分隔行 (|---|---|)
+            if (lines.length > 1 && /^[\|\s\-:]+$/.test(lines[1])) dataStart = 2;
+            for (let i = dataStart; i < lines.length; i++) {
+                const cells = parseCells(lines[i]).map(c => `<td>${escapeHtml(c)}</td>`).join('');
+                html += `<tr>${cells}</tr>`;
+            }
+            html += '</tbody></table>';
+            return html;
+        }
+
+        // 将 HTML 表格块替换为占位符，避免被 <p> 包裹
+        function preserveTables(htmlBody) {
+            const tables = [];
+            const placeholder = '%%TABLE_';
+            let idx = 0;
+            const processed = htmlBody.replace(/<table>[\s\S]*?<\/table>/g, match => {
+                tables.push(match);
+                return placeholder + (idx++) + '%%';
+            });
+            return { processed, tables };
+        }
+
+        function restoreTables(html, tables) {
+            return html.replace(/%%TABLE_(\d+)%%/g, (m, i) => tables[parseInt(i)] || '');
+        }
+
+        // 截图并切片
+        async function captureAndSlice(iframe, galleryDiv, scrollDiv, downloadAllBtn) {
+            try {
+                const doc = iframe.contentWindow.document;
+                const container = doc.body;
+                const totalHeight = container.scrollHeight;
+                if (totalHeight === 0) throw new Error('内容高度为0，请等待渲染完成');
+                const sliceHeight = 1100;
+                const slices = [];
+                let startY = 0;
+                const originalOverflow = container.style.overflow;
+                container.style.overflow = 'visible';
+
+                while (startY < totalHeight) {
+                    iframe.contentWindow.scrollTo(0, startY);
+                    await new Promise(r => setTimeout(r, 200));
+                    const canvas = await html2canvas(container, {
+                        scale: 2,
+                        windowWidth: container.scrollWidth,
+                        windowHeight: Math.min(sliceHeight, totalHeight - startY),
+                        y: startY,
+                        height: Math.min(sliceHeight, totalHeight - startY),
+                        logging: false,
+                        useCORS: true,       // 尝试允许跨域图片
+                        allowTaint: false
+                    });
+                    slices.push(canvas);
+                    startY += sliceHeight;
+                }
+                iframe.contentWindow.scrollTo(0, 0);
+                container.style.overflow = originalOverflow;
+
+                scrollDiv.innerHTML = '';
+                const images = [];
+                slices.forEach((canvas, idx) => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const card = document.createElement('div');
+                    card.className = 'screenshot-card';
+                    const img = document.createElement('img');
+                    img.src = imgData;
+                    img.style.maxWidth = '300px';
+                    const btn = document.createElement('button');
+                    btn.innerText = `下载 页${idx + 1}`;
+                    btn.className = 'download-btn';
+                    btn.onclick = () => {
+                        const a = document.createElement('a');
+                        a.download = `page_${idx + 1}.png`;
+                        a.href = imgData;
+                        a.click();
+                    };
+                    card.appendChild(img);
+                    card.appendChild(btn);
+                    scrollDiv.appendChild(card);
+                    images.push(imgData);
+                });
+                galleryDiv.style.display = 'block';
+                downloadAllBtn.onclick = () => {
+                    images.forEach((data, i) => {
+                        const a = document.createElement('a');
+                        a.download = `screenshot_${i + 1}.png`;
+                        a.href = data;
+                        a.click();
+                    });
+                };
+            } catch (err) {
+                alert('截图失败：' + err.message + '。若包含跨域图片，请先将图片转为Base64再插入。');
+                console.error(err);
+            }
+        }
+
+        // ------------------- 红头文件逻辑 -------------------
+        function buildRedPrompt(org, docType, affair, docNum, signUnit, signDate, minWords, tableReq) {
+            const finalDocNum = docNum.trim() || `〔${new Date().getFullYear()}〕趣${Math.floor(Math.random()*100)}号`;
+            const finalSignUnit = signUnit.trim() || org;
+            const finalDate = signDate.trim() || `${new Date().getFullYear()}年${new Date().getMonth()+1}月${new Date().getDate()}日`;
+            const tableText = tableReq === '是' ? '必须包含一个完整的信息表格（例如物资清单、降雨等级表等）。' : '不强制要求表格，但可根据内容自行决定。';
+            return `你是一个幽默公文写手。请根据以下信息，输出一份红头文件的纯文本内容（不要输出HTML，不要加额外解释），严格遵循下面的格式标记。
+
+【用户输入】
+- 发文机关：${org}
+- 文号：${finalDocNum}
+- 文件类型：${docType}
+- 核心事由：${affair}
+- 落款单位：${finalSignUnit}
+- 成文日期：${finalDate}
+- 最低字数要求：${minWords} 字以上
+- 表格要求：${tableText}
+
+【输出格式】
+<<RED_START>>
+发文机关：${org}
+文号：${finalDocNum}
+文件类型：${docType}
+标题：关于${affair}的${docType}
+主送单位：请根据发文机关和事由自行编造合理的主送单位，如“各区教育局、各直属学校（含民办、高校附属中小学），各责任单位：”
+<<BODY_START>>
+（正文部分，必须使用严肃公文口吻写作，并体现以下特征：
+1. 开头必须包含“深刻贯彻落实”“坚持走好……道路”“数字赋能”“现就……通知如下”等官话套话；
+2. 主体按“一、二、三、……”分条目展开，每个条目带概括性小标题；
+3. 必须将荒诞的核心事由用极其科学化、数据化、官僚化的口吻论述，编造看似真实实则离谱的理论、实验数据、专家评审意见等细节；
+4. 灵活运用“压实责任”“卡脖子问题”“牢固树立”“坚决破除”“四不两直”“纳入考核”等词语；
+5. 结尾要有强硬甚至荒诞的考核问责措施，以及一句充满战斗气息的升华口号；
+6. ${tableText}
+7. 总字数不低于${minWords}字。）
+<<BODY_END>>
+落款单位：${finalSignUnit}
+成文日期：${finalDate}
+（此件公开发布）
+<<RED_END>>
+
+只输出纯文本，不要解释。`;
+        }
+
+        function parseRedText(text) {
+            const def = { org:'未知机关', docNum:'〔2026〕1号', title:'关于未知事项的通知', body:'暂无正文', signUnit:'未知单位', signDate:'2026年1月1日' };
+            try {
+                return {
+                    org: (text.match(/发文机关[：:]\s*(.+)/)||[])[1]?.trim() || def.org,
+                    docNum: (text.match(/文号[：:]\s*(.+)/)||[])[1]?.trim() || def.docNum,
+                    title: (text.match(/标题[：:]\s*(.+)/)||[])[1]?.trim() || def.title,
+                    body: (text.match(/<<BODY_START>>\s*([\s\S]*?)\s*<<BODY_END>>/)||[])[1]?.trim() || def.body,
+                    signUnit: (text.match(/落款单位[：:]\s*(.+)/)||[])[1]?.trim() || def.signUnit,
+                    signDate: (text.match(/成文日期[：:]\s*(.+)/)||[])[1]?.trim() || def.signDate
+                };
+            } catch(e) { return def; }
+        }
+
+        function renderRedHtml(data) {
+            let { org, docNum, title, body, signUnit, signDate } = data;
+            // 先转换 markdown 表格
+            body = convertMarkdownTables(body);
+            // 保护已存在的 HTML 表格
+            const { processed, tables } = preserveTables(body);
+            // 按段落拆分，忽略纯占位符段落
+            const paragraphs = processed.split(/\n\n+/);
+            let bodyHtml = '';
+            for (let para of paragraphs) {
+                if (!para.trim()) continue;
+                if (/^%%TABLE_\d+%%$/.test(para.trim())) {
+                    bodyHtml += para.trim() + '\n';
+                } else {
+                    bodyHtml += `<p>  ${para.replace(/\n/g, '<br>')}</p>`;
+                }
+            }
+            bodyHtml = restoreTables(bodyHtml, tables);
+            if (!bodyHtml) bodyHtml = `<p>  ${body}</p>`;
+
+            return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:white;display:flex;justify-content:center;padding:30px 20px;font-family:'Times New Roman','仿宋','FangSong',serif;}
+.document{max-width:1000px;width:100%;background:white;padding:42px 40px 56px;}
+.red-header{text-align:center;margin-bottom:18px;border-bottom:2px solid #b11e23;padding-bottom:14px;}
+.org-name{font-size:2rem;font-weight:800;font-family:'黑体',sans-serif;color:#b11e23;}
+.doc-number{font-size:1rem;margin-top:8px;}
+.title{text-align:center;font-size:1.6rem;font-weight:600;margin:30px 0 24px;font-family:'黑体',sans-serif;}
+.content{font-size:1rem;line-height:1.75;margin-bottom:20px;}
+.content p{margin-bottom:1em;}
+.content table{margin:1em auto; border-collapse:collapse; width:100%;}
+.content th,.content td{border:1px solid #aaa; padding:8px; text-align:center;}
+.signature{text-align:right;margin-top:56px;}
+.stamp{color:#b11e23;margin-top:6px;font-size:0.9rem;}
+.version-note{margin-top:48px;padding-top:12px;border-top:1px solid #ddd;font-size:0.7rem;text-align:center;}
+</style></head><body>
+<div class="document">
+<div class="red-header"><div class="org-name">${escapeHtml(org)}</div><div class="doc-number">${escapeHtml(docNum)}</div></div>
+<div class="title">${escapeHtml(title)}</div>
+<div class="content">${bodyHtml}</div>
+<div class="signature"><div>${escapeHtml(signUnit)}</div><div>${escapeHtml(signDate)}</div><div class="stamp">（此件公开发布）</div></div>
+<div class="version-note">${escapeHtml(org)}办公室 印发</div>
+</div></body></html>`;
+        }
+
+        // ------------------- 恩情文章逻辑 -------------------
+        function buildEulogyPrompt(hero, deed, place, time, enableImg) {
+            const p = place.trim() || '那片热土';
+            const t = time.trim() || '那个难忘的日子';
+            const imgInst = enableImg === '是' ? '你必须在文章适当位置插入图片占位符，格式为 <<IMG: 图片内容描述>>，请根据情节生成2-4个具体描述。' : '';
+            return `你是一位擅长夸张感恩文章的作者。请根据以下信息，输出一篇恩情文章的纯文本内容。
+
+【素材】
+- 主角：${hero}
+- 事迹：${deed}
+- 地点：${p}
+- 时间：${t}
+- 图片要求：${imgInst}
+
+【输出格式】
+<<EULOGY_START>>
+标题：XXXXXXXX（必须包含主角名字）
+<<BODY_START>>
+（正文，极度夸张感人，约400~800字，分3~10段。${imgInst}）
+<<BODY_END>>
+作者：一位被感动的见证者
+<<EULOGY_END>>
+
+只输出纯文本。`;
+        }
+
+        function parseEulogyText(text) {
+            return {
+                title: (text.match(/标题[：:]\s*(.+)/)||[])[1]?.trim() || '恩情永存',
+                body: (text.match(/<<BODY_START>>\s*([\s\S]*?)\s*<<BODY_END>>/)||[])[1]?.trim() || '无正文'
+            };
+        }
+
+        function renderEulogyHtml(data) {
+            const { title, body } = data;
+            let processedBody = body.replace(/<<IMG:(.*?)>>/g, (m, desc) => {
+                const imgId = 'img_' + Math.random().toString(36).substr(2,8);
+                return `<div class="image-placeholder" data-img-id="${imgId}">
+                    <div class="placeholder-label">📷 ${escapeHtml(desc.trim())}</div>
+                    <div class="placeholder-controls">
+                        <button class="upload-img-btn" data-id="${imgId}">📁 上传图片</button>
+                        <button class="url-img-btn" data-id="${imgId}">🔗 输入图片URL</button>
+                    </div>
+                    <div class="img-preview" id="preview-${imgId}"></div>
+                </div>`;
+            });
+            let bodyHtml = processedBody.split(/\n\n+/).map(p => `<p>  ${p.replace(/\n/g,'<br>')}</p>`).join('');
+            if (!bodyHtml) bodyHtml = `<p>  ${body}</p>`;
+
+            return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{background:#fef9ef;font-family:'Georgia','宋体',serif;padding:30px 20px;}
+.article{max-width:800px;margin:0 auto;background:#fffef7;padding:40px 30px;border-radius:28px;}
+h1{text-align:center;font-size:1.8rem;color:#b45f2b;margin-bottom:30px;border-left:6px solid #e67e22;padding-left:16px;}
+p{text-indent:2em;margin-bottom:1.2em;font-size:1rem;line-height:1.7;}
+.quote{font-style:italic;text-align:center;margin-top:30px;}
+.image-placeholder{border:2px dashed #c0392b; background:#fff0f0; padding:12px; margin:15px 0; border-radius:16px; text-align:center;}
+.placeholder-label{font-weight:bold; margin-bottom:8px;}
+.placeholder-controls button{margin:4px; background:#3498db; border:none; padding:6px 12px; border-radius:20px; color:white; cursor:pointer;}
+.img-preview img{max-width:100%; max-height:300px; margin-top:10px; border-radius:12px;}
+</style></head><body>
+<div class="article"><h1>📖 ${escapeHtml(title)}</h1>${bodyHtml}<div class="quote">恩情似海，铭记于心</div></div>
+<script>
+(function(){
+    function hideControls(id){
+        var el = document.querySelector('.image-placeholder[data-img-id="'+id+'"] .placeholder-controls');
+        if(el) el.style.display = 'none';
+    }
+    function showImage(id, src){
+        var preview = document.getElementById('preview-'+id);
+        if(!preview) return;
+        preview.innerHTML = '';
+        var img = document.createElement('img');
+        img.src = src;
+        img.onerror = function(){ this.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23ccc%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dy=%22.3em%22 text-anchor=%22middle%22 font-size=%2214%22 fill=%22%23999%22%3E加载失败%3C/text%3E%3C/svg%3E'; };
+        preview.appendChild(img);
+        hideControls(id);
+    }
+    document.querySelectorAll('.upload-img-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            var id = this.getAttribute('data-id');
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e){
+                var file = e.target.files[0];
+                if(!file) return;
+                var reader = new FileReader();
+                reader.onload = function(ev){ showImage(id, ev.target.result); };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        });
+    });
+    document.querySelectorAll('.url-img-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            var id = this.getAttribute('data-id');
+            var url = prompt('请输入图片URL:');
+            if(url) showImage(id, url);
+        });
+    });
+})();
+<\/script>
+</body></html>`;
+        }
+
+        // ---------- 绑定红头 ----------
+        const red = {
+            org: document.getElementById('redOrg'),
+            type: document.getElementById('redType'),
+            event: document.getElementById('redEvent'),
+            number: document.getElementById('redNumber'),
+            signUnit: document.getElementById('redSignUnit'),
+            signDate: document.getElementById('redSignDate'),
+            minWords: document.getElementById('redMinWords'),
+            tableReq: document.getElementById('redTableRequired'),
+            promptBtn: document.getElementById('genRedPromptBtn'),
+            promptArea: document.getElementById('redPromptArea'),
+            promptText: document.getElementById('redPromptText'),
+            plainText: document.getElementById('redPlainText'),
+            renderBtn: document.getElementById('renderRedBtn'),
+            exportBtn: document.getElementById('exportRedImgBtn'),
+            wrapper: document.getElementById('redRenderWrapper'),
+            iframe: document.getElementById('redIframe'),
+            gallery: document.getElementById('redGallery'),
+            scroll: document.getElementById('redScroll'),
+            downloadAll: document.getElementById('downloadAllRedBtn')
+        };
+        let currentRedHtml = '';
+        red.promptBtn.onclick = () => {
+            const prompt = buildRedPrompt(
+                red.org.value.trim(), red.type.value, red.event.value.trim(),
+                red.number.value, red.signUnit.value, red.signDate.value,
+                red.minWords.value, red.tableReq.value
+            );
+            red.promptText.value = prompt;
+            red.promptArea.style.display = 'block';
+        };
+        red.renderBtn.onclick = () => {
+            const raw = red.plainText.value.trim();
+            if (!raw) return alert('请粘贴AI返回的纯文本');
+            currentRedHtml = renderRedHtml(parseRedText(raw));
+            renderToIframe(red.iframe, currentRedHtml, red.wrapper);
+            red.gallery.style.display = 'none';
+        };
+        red.exportBtn.onclick = async () => {
+            if (!currentRedHtml) return alert('请先渲染预览');
+            if (red.wrapper.style.display !== 'block') return alert('请先渲染预览');
+            await captureAndSlice(red.iframe, red.gallery, red.scroll, red.downloadAll);
+        };
+
+        // ---------- 绑定恩情 ----------
+        const eul = {
+            hero: document.getElementById('eHero'),
+            deed: document.getElementById('eDeed'),
+            place: document.getElementById('ePlace'),
+            time: document.getElementById('eTime'),
+            enableImg: document.getElementById('enableImagePlaceholder'),
+            imgGroup: document.getElementById('imgPromptGroup'),
+            imgPrompt: document.getElementById('imgGenPrompt'),
+            promptBtn: document.getElementById('genEulogyPromptBtn'),
+            promptArea: document.getElementById('eulogyPromptArea'),
+            promptText: document.getElementById('eulogyPromptText'),
+            plainText: document.getElementById('eulogyPlainText'),
+            renderBtn: document.getElementById('renderEulogyBtn'),
+            exportBtn: document.getElementById('exportEulogyImgBtn'),
+            wrapper: document.getElementById('eulogyRenderWrapper'),
+            iframe: document.getElementById('eulogyIframe'),
+            gallery: document.getElementById('eulogyGallery'),
+            scroll: document.getElementById('eulogyScroll'),
+            downloadAll: document.getElementById('downloadAllEulogyBtn')
+        };
+        let currentEulogyHtml = '';
+        eul.enableImg.addEventListener('change', () => {
+            eul.imgGroup.style.display = eul.enableImg.value === '是' ? 'block' : 'none';
+            if (eul.enableImg.value === '是') {
+                eul.imgPrompt.value = `请根据场景生成夸张感恩风格图片：主角“${eul.hero.value.trim() || '主角'}”，事迹“${eul.deed.value.trim() || '事迹'}”。`;
+            }
+        });
+        eul.promptBtn.onclick = () => {
+            const prompt = buildEulogyPrompt(
+                eul.hero.value.trim(), eul.deed.value.trim(),
+                eul.place.value, eul.time.value,
+                eul.enableImg.value
+            );
+            eul.promptText.value = prompt;
+            eul.promptArea.style.display = 'block';
+            if (eul.enableImg.value === '是') {
+                eul.imgPrompt.value = `请根据文章中的 <<IMG:...>> 占位描述生成图片，可多次生成。`;
+            }
+        };
+        eul.renderBtn.onclick = () => {
+            const raw = eul.plainText.value.trim();
+            if (!raw) return alert('请粘贴AI返回的纯文本');
+            currentEulogyHtml = renderEulogyHtml(parseEulogyText(raw));
+            renderToIframe(eul.iframe, currentEulogyHtml, eul.wrapper);
+            eul.gallery.style.display = 'none';
+        };
+        eul.exportBtn.onclick = async () => {
+            if (!currentEulogyHtml) return alert('请先渲染预览');
+            if (eul.wrapper.style.display !== 'block') return alert('请先渲染预览');
+            await captureAndSlice(eul.iframe, eul.gallery, eul.scroll, eul.downloadAll);
+        };
+
+        // 初始化图片占位组
+        eul.enableImg.dispatchEvent(new Event('change'));
+
+        // 选项卡
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active-panel'));
+                document.getElementById(btn.dataset.tab).classList.add('active-panel');
+            });
+        });
+    })();
+</script>
+</body>
+</html>
