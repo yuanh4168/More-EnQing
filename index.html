@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>趣文工坊 · 渲染与截图</title>
+    <title>HongTouAbsurd · 智能公文渲染器</title>
+    <!-- 截图库 -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- ZIP 打包库 -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -78,9 +81,7 @@
             display: block;
             font-size: 0.9rem;
         }
-        input,
-        textarea,
-        select {
+        input, textarea, select {
             width: 100%;
             padding: 12px 14px;
             font-size: 0.95rem;
@@ -94,7 +95,7 @@
             gap: 12px;
             flex-wrap: wrap;
         }
-        .row-2col>div {
+        .row-2col > div {
             flex: 1;
         }
         button {
@@ -119,8 +120,7 @@
         button:active {
             transform: scale(0.97);
         }
-        .prompt-area,
-        .render-area {
+        .prompt-area, .render-area {
             margin-top: 24px;
             border-top: 2px dashed #dce5ec;
             padding-top: 20px;
@@ -242,9 +242,9 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>📄 智能公文渲染器</h1>
-        <p>生成提示词 → AI返回纯文本 → 粘贴渲染 → 导出图片（自动切片并排）</p>
-        <p class="note">⚠️ 本程序不含任何复制按钮，请手动选中文本进行复制</p>
+        <h1>🏴 HongTouAbsurd · 智能公文渲染器</h1>
+        <p>荒诞红头文件 + 恩情文章生成器 · 纯前端 · 一键导出多页截图</p>
+        <p class="note">⚠️ 所有操作均在浏览器内完成，不上传任何数据。请手动复制提示词。</p>
     </div>
 
     <div class="tabs">
@@ -264,29 +264,29 @@
         <div class="form-group"><label>📅 文号（可选）</label><input type="text" id="redNumber" value="〔2026〕第8号"></div>
         <div class="form-group"><label>🖋️ 落款单位 & 日期</label><div style="display: flex; gap: 8px; flex-wrap: wrap;"><input type="text" id="redSignUnit" placeholder="落款" style="flex:1" value="厦门市教育局"><input type="text" id="redSignDate" placeholder="日期" style="flex:1" value="2026年6月1日"></div></div>
         <button id="genRedPromptBtn">✨ 生成提示词（手动复制文本发给AI）</button>
-        <div class="prompt-area" id="redPromptArea" style="display: none;"><div class="section-title"><span>📋 下方提示词请手动复制，发给AI</span></div><textarea id="redPromptText" rows="8" readonly></textarea><div class="note">AI将返回带标记的纯文本，请粘贴到下方“AI返回纯文本”区域</div></div>
+        <div class="prompt-area" id="redPromptArea" style="display: none;"><div class="section-title"><span>📋 提示词（请手动复制）</span></div><textarea id="redPromptText" rows="8" readonly></textarea><div class="note">AI将返回带标记的纯文本，请粘贴到下方“AI返回纯文本”区域</div></div>
         <div class="render-area">
-            <div class="section-title"><span>📥 粘贴AI返回的纯文本</span><div class="flex-btns"><button id="renderRedBtn" class="secondary">🎨 渲染预览</button><button id="exportRedImgBtn" class="export-btn">📸 保存为图片</button></div></div>
+            <div class="section-title"><span>📥 粘贴AI返回的纯文本</span><div class="flex-btns"><button id="renderRedBtn" class="secondary">🎨 渲染预览</button><button id="exportRedImgBtn" class="export-btn">📸 保存为图片（自动切片并排）</button></div></div>
             <textarea id="redPlainText" rows="8" placeholder="请将AI输出的纯文本粘贴到这里..."></textarea>
             <div id="redRenderWrapper" class="render-wrapper" style="display: none;"><iframe id="redIframe" class="preview-frame" title="红头文件预览"></iframe></div>
-            <div id="redGallery" class="screenshot-gallery" style="display: none;"><div class="gallery-title"><span>🖼️ 截图结果</span><button id="downloadAllRedBtn" class="export-btn" style="background:#27ae60;">⬇️ 下载全部</button></div><div id="redScroll" class="screenshot-scroll"></div></div>
+            <div id="redGallery" class="screenshot-gallery" style="display: none;"><div class="gallery-title"><span>🖼️ 截图结果（多页并排）</span><button id="downloadAllRedBtn" class="export-btn" style="background:#27ae60;">⬇️ 下载全部图片 (ZIP)</button></div><div id="redScroll" class="screenshot-scroll"></div></div>
         </div>
     </div>
 
     <!-- ================= 恩情文章面板 ================= -->
     <div id="tab2" class="panel">
-        <div class="form-group"><label>🌟 主角</label><input type="text" id="eHero" value="立熊"></div>
+        <div class="form-group"><label>🌟 主角（昵称/ID）</label><input type="text" id="eHero" value="立熊"></div>
         <div class="form-group"><label>✨ 感人事迹</label><textarea id="eDeed" rows="2">在快要不再叫学生们的时候，在台上哭哭啼啼下面没一个人鸟他</textarea></div>
-        <div class="form-group"><label>📍 地点/时间</label><div style="display: flex; gap: 8px;"><input type="text" id="ePlace" placeholder="地点" style="flex:1" value="班级"><input type="text" id="eTime" placeholder="时间" style="flex:1" value="2024年"></div></div>
-        <div class="form-group"><label>🖼️ 启用图片占位符</label><select id="enableImagePlaceholder"><option value="是" selected>是 - 插入 <<IMG:描述>> 占位</option><option value="否">否</option></select></div>
-        <div class="form-group" id="imgPromptGroup" style="display: none;"><label>🎨 图片生成提示词</label><textarea id="imgGenPrompt" rows="3" placeholder="此处自动生成图片描述提示词..."></textarea></div>
+        <div class="form-group"><label>📍 地点/时间（可选）</label><div style="display: flex; gap: 8px;"><input type="text" id="ePlace" placeholder="地点" style="flex:1" value="班级"><input type="text" id="eTime" placeholder="时间" style="flex:1" value="2024年"></div></div>
+        <div class="form-group"><label>🖼️ 启用图片占位符（多模态AI建议开启）</label><select id="enableImagePlaceholder"><option value="是" selected>是 - 在文本中插入 <<IMG:描述>> 占位</option><option value="否">否</option></select></div>
+        <div class="form-group" id="imgPromptGroup" style="display: none;"><label>🎨 图片生成提示词（手动复制此段发给多模态AI生成图片）</label><textarea id="imgGenPrompt" rows="3" placeholder="开启图片占位后，此处会自动生成图片描述提示词..."></textarea></div>
         <button id="genEulogyPromptBtn">✨ 生成文章提示词（手动复制发给AI）</button>
-        <div class="prompt-area" id="eulogyPromptArea" style="display: none;"><div class="section-title"><span>📋 提示词</span></div><textarea id="eulogyPromptText" rows="8" readonly></textarea><div class="note">AI将返回带标记的纯文本，可能包含 <<IMG:描述>> 占位符</div></div>
+        <div class="prompt-area" id="eulogyPromptArea" style="display: none;"><div class="section-title"><span>📋 提示词（请手动复制）</span></div><textarea id="eulogyPromptText" rows="8" readonly></textarea><div class="note">AI将返回带标记的纯文本，可能包含 <<IMG:描述>> 占位符</div></div>
         <div class="render-area">
-            <div class="section-title"><span>📥 粘贴AI返回的纯文本</span><div class="flex-btns"><button id="renderEulogyBtn" class="secondary">🎨 渲染预览</button><button id="exportEulogyImgBtn" class="export-btn">📸 保存为图片</button></div></div>
-            <textarea id="eulogyPlainText" rows="8" placeholder="请粘贴AI输出的纯文本..."></textarea>
+            <div class="section-title"><span>📥 粘贴AI返回的纯文本</span><div class="flex-btns"><button id="renderEulogyBtn" class="secondary">🎨 渲染预览（含图片占位）</button><button id="exportEulogyImgBtn" class="export-btn">📸 保存为图片（自动切片并排）</button></div></div>
+            <textarea id="eulogyPlainText" rows="8" placeholder="请将AI输出的纯文本粘贴到这里..."></textarea>
             <div id="eulogyRenderWrapper" class="render-wrapper" style="display: none;"><iframe id="eulogyIframe" class="preview-frame" title="恩情文章预览"></iframe></div>
-            <div id="eulogyGallery" class="screenshot-gallery" style="display: none;"><div class="gallery-title"><span>🖼️ 截图结果</span><button id="downloadAllEulogyBtn" class="export-btn" style="background:#27ae60;">⬇️ 下载全部</button></div><div id="eulogyScroll" class="screenshot-scroll"></div></div>
+            <div id="eulogyGallery" class="screenshot-gallery" style="display: none;"><div class="gallery-title"><span>🖼️ 截图结果（多页并排）</span><button id="downloadAllEulogyBtn" class="export-btn" style="background:#27ae60;">⬇️ 下载全部图片 (ZIP)</button></div><div id="eulogyScroll" class="screenshot-scroll"></div></div>
         </div>
     </div>
 </div>
@@ -299,17 +299,19 @@
             return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
         }
 
+        // 核心修复：使用 about:blank + document.write 保证同源，解决截图跨域问题
         function renderToIframe(iframe, html, wrapper) {
             if (!html) return;
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            iframe.src = url;
-            iframe.onload = () => {
-                URL.revokeObjectURL(url);
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            doc.open();
+            doc.write(html);
+            doc.close();
+            // 调整高度
+            setTimeout(() => {
                 try {
-                    iframe.style.height = Math.max(iframe.contentWindow.document.body.scrollHeight + 30, 500) + 'px';
+                    iframe.style.height = Math.max(doc.body.scrollHeight + 30, 500) + 'px';
                 } catch (e) { iframe.style.height = '600px'; }
-            };
+            }, 100);
             wrapper.style.display = 'block';
         }
 
@@ -338,14 +340,11 @@
 
         function renderTableHTML(lines) {
             if (lines.length === 0) return '';
-            // 解析单元格
             const parseCells = (row) => row.split('|').filter(c => c.trim() !== '').map(c => c.trim());
             let html = '<table>';
-            // 表头
             const headerCells = parseCells(lines[0]).map(c => `<th>${escapeHtml(c)}</th>`).join('');
             html += `<thead><tr>${headerCells}</tr></thead><tbody>`;
             let dataStart = 1;
-            // 跳过可能的对齐分隔行 (|---|---|)
             if (lines.length > 1 && /^[\|\s\-:]+$/.test(lines[1])) dataStart = 2;
             for (let i = dataStart; i < lines.length; i++) {
                 const cells = parseCells(lines[i]).map(c => `<td>${escapeHtml(c)}</td>`).join('');
@@ -355,7 +354,6 @@
             return html;
         }
 
-        // 将 HTML 表格块替换为占位符，避免被 <p> 包裹
         function preserveTables(htmlBody) {
             const tables = [];
             const placeholder = '%%TABLE_';
@@ -371,7 +369,7 @@
             return html.replace(/%%TABLE_(\d+)%%/g, (m, i) => tables[parseInt(i)] || '');
         }
 
-        // 截图并切片
+        // 截图并切片，支持 ZIP 下载
         async function captureAndSlice(iframe, galleryDiv, scrollDiv, downloadAllBtn) {
             try {
                 const doc = iframe.contentWindow.document;
@@ -394,7 +392,7 @@
                         y: startY,
                         height: Math.min(sliceHeight, totalHeight - startY),
                         logging: false,
-                        useCORS: true,       // 尝试允许跨域图片
+                        useCORS: true,
                         allowTaint: false
                     });
                     slices.push(canvas);
@@ -427,13 +425,21 @@
                     images.push(imgData);
                 });
                 galleryDiv.style.display = 'block';
-                downloadAllBtn.onclick = () => {
+
+                // ZIP 下载
+                downloadAllBtn.onclick = async () => {
+                    const zip = new JSZip();
                     images.forEach((data, i) => {
-                        const a = document.createElement('a');
-                        a.download = `screenshot_${i + 1}.png`;
-                        a.href = data;
-                        a.click();
+                        const base64 = data.split(',')[1];
+                        zip.file(`screenshot_${i + 1}.png`, base64, { base64: true });
                     });
+                    const blob = await zip.generateAsync({ type: 'blob' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'screenshots.zip';
+                    a.click();
+                    URL.revokeObjectURL(url);
                 };
             } catch (err) {
                 alert('截图失败：' + err.message + '。若包含跨域图片，请先将图片转为Base64再插入。');
@@ -500,11 +506,8 @@
 
         function renderRedHtml(data) {
             let { org, docNum, title, body, signUnit, signDate } = data;
-            // 先转换 markdown 表格
             body = convertMarkdownTables(body);
-            // 保护已存在的 HTML 表格
             const { processed, tables } = preserveTables(body);
-            // 按段落拆分，忽略纯占位符段落
             const paragraphs = processed.split(/\n\n+/);
             let bodyHtml = '';
             for (let para of paragraphs) {
@@ -549,7 +552,7 @@ body{background:white;display:flex;justify-content:center;padding:30px 20px;font
             const p = place.trim() || '那片热土';
             const t = time.trim() || '那个难忘的日子';
             const imgInst = enableImg === '是' ? '你必须在文章适当位置插入图片占位符，格式为 <<IMG: 图片内容描述>>，请根据情节生成2-4个具体描述。' : '';
-            return `你是一位擅长夸张感恩文章的作者。请根据以下信息，输出一篇恩情文章的纯文本内容。
+            return `你是一位擅长夸张感恩文章的作者。请根据以下信息，输出一篇恩情文章的纯文本内容（不要输出HTML，遵循格式标记）。
 
 【素材】
 - 主角：${hero}
@@ -748,10 +751,10 @@ p{text-indent:2em;margin-bottom:1.2em;font-size:1rem;line-height:1.7;}
             await captureAndSlice(eul.iframe, eul.gallery, eul.scroll, eul.downloadAll);
         };
 
-        // 初始化图片占位组
+        // 初始化图片占位组显示
         eul.enableImg.dispatchEvent(new Event('change'));
 
-        // 选项卡
+        // 选项卡切换
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
